@@ -22,7 +22,7 @@ public class LeaveRequest {
         this.leaveDaysRequested = leaveDaysRequested;
     }
 
-    // Getter - Setter metodları
+ 
     public Long getId() {
         return id;
     }

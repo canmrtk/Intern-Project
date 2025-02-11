@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "employees")
 public class Employee {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -13,7 +14,8 @@ public class Employee {
     private String surname;
     private String email;
     private String department;
-    private int leaveDays = 15; // Default olarak 15 gün izin
+
+    private int leaveDays = 15; // Varsayılan olarak 15 gün izin ver
 
     public Employee() {}
 
@@ -25,53 +27,51 @@ public class Employee {
         this.leaveDays = 15;
     }
 
-	public Long getId() {
-		return id;
-	}
+    public Long getId() {
+        return id;
+    }
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-	public String getName() {
-		return name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public String getSurname() {
-		return surname;
-	}
+    public String getSurname() {
+        return surname;
+    }
 
-	public void setSurname(String surname) {
-		this.surname = surname;
-	}
+    public void setSurname(String surname) {
+        this.surname = surname;
+    }
 
-	public String getEmail() {
-		return email;
-	}
+    public String getEmail() {
+        return email;
+    }
 
-	public void setEmail(String email) {
-		this.email = email;
-	}
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-	public String getDepartment() {
-		return department;
-	}
+    public String getDepartment() {
+        return department;
+    }
 
-	public void setDepartment(String department) {
-		this.department = department;
-	}
+    public void setDepartment(String department) {
+        this.department = department;
+    }
 
-	public int getLeaveDays() {
-		return leaveDays;
-	}
+    public int getLeaveDays() { // GETTER METODU EKLENDİ
+        return leaveDays;
+    }
 
-	public void setLeaveDays(int leaveDays) {
-		this.leaveDays = leaveDays;
-	}
-
-    // Getter-Setter metodları
+    public void setLeaveDays(int leaveDays) { // SETTER METODU EKLENDİ
+        this.leaveDays = leaveDays;
+    }
 }

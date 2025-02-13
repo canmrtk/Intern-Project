@@ -67,11 +67,11 @@ public class Employee {
         this.department = department;
     }
 
-    public int getLeaveDays() { // GETTER METODU EKLENDİ
+    public int getLeaveDays() { 
         return leaveDays;
     }
 
-    public void setLeaveDays(int leaveDays) { // SETTER METODU EKLENDİ
+    public void setLeaveDays(int leaveDays) { 
         this.leaveDays = leaveDays;
     }
 }

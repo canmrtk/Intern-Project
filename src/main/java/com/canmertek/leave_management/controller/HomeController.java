@@ -10,6 +10,6 @@ public class HomeController {
 
     @GetMapping
     public String home() {
-        return "Backend Çalışıyor! API'yi test etmek için /api/employees endpoint'ini kullan.";
+        return "Backend Çalışıyor API'yi test etmek için /api/employees endpoint'ini kullan.";
     }
 }

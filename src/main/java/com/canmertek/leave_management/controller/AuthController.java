@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -31,4 +32,41 @@ public class AuthController {
             return ResponseEntity.status(404).body("Kullanıcı bulunamadı!");
         }
     }
+    
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@RequestBody Employee newUser) {
+        if (employeeRepository.findByEmail(newUser.getEmail()).isPresent()) {
+            return ResponseEntity.status(400).body("Bu e-posta adresi zaten kullanılıyor!");
+        }
+
+        newUser.setPassword(newUser.getPassword()); // Şifreyi direkt kaydediyoruz 
+        employeeRepository.save(newUser);
+        
+        return ResponseEntity.ok("Kullanıcı başarıyla oluşturuldu!");
+    }
+    
+    @PutMapping("/update-password")
+    public ResponseEntity<?> updatePassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String oldPassword = request.get("oldPassword");
+        String newPassword = request.get("newPassword");
+
+        Optional<Employee> employeeOpt = employeeRepository.findByEmail(email);
+        
+        if (employeeOpt.isPresent()) {
+            Employee employee = employeeOpt.get();
+
+            if (!employee.getPassword().equals(oldPassword)) {
+                return ResponseEntity.status(401).body("Mevcut şifre yanlış!");
+            }
+
+            employee.setPassword(newPassword);
+            employeeRepository.save(employee);
+            return ResponseEntity.ok("Şifre başarıyla güncellendi.");
+        } else {
+            return ResponseEntity.status(404).body("Kullanıcı bulunamadı!");
+        }
+    }
+
+
 }

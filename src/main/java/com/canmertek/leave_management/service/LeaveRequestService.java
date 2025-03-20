@@ -6,12 +6,12 @@ import com.canmertek.leave_management.repository.EmployeeRepository;
 import com.canmertek.leave_management.repository.LeaveRequestRepository;
 
 import jakarta.validation.Valid;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class LeaveRequestService {
@@ -27,47 +27,53 @@ public class LeaveRequestService {
     }
 
     // Belirli bir çalışanın izin taleplerini getir
-    public List<LeaveRequest> getLeaveRequestsByEmployee(Long employeeId) {
+    public List<LeaveRequest> getLeaveRequestsByEmployee(UUID employeeId) {
         return leaveRequestRepository.findByEmployeeId(employeeId);
     }
 
     // Yeni izin talebi oluştur
-    public ResponseEntity<?> createLeaveRequest(@Valid LeaveRequest leaveRequest) {
-        Employee employee = employeeRepository.findByEmail(leaveRequest.getEmployee().getEmail())
-                .orElseThrow(() -> new RuntimeException("Çalışan bulunamadı!"));
+    public String createLeaveRequest(@Valid LeaveRequest leaveRequest) {
+        Optional<Employee> employeeOpt = employeeRepository.findByEmail(leaveRequest.getEmployee().getEmail());
 
-        if (leaveRequestRepository.existsByEmployeeAndStatus(employee, "PENDING")) {
-            return ResponseEntity.badRequest().body("Zaten bekleyen bir izin talebiniz var!");
+        if (employeeOpt.isEmpty()) {
+            throw new RuntimeException("Çalışan bulunamadı!");
         }
 
-        leaveRequest.setEmployee(employee);
-        leaveRequest.setStatus("PENDING");
-        leaveRequestRepository.save(leaveRequest);
+        Employee employee = employeeOpt.get();
 
-        return ResponseEntity.ok("İzin talebi başarıyla oluşturuldu ve onay bekliyor.");
+        if (leaveRequestRepository.existsByEmployeeAndStatus(employee, "PENDING")) {
+            throw new IllegalStateException("Zaten bekleyen bir izin talebiniz var!");
+        }
+
+        if (employee.getLeaveDays() < leaveRequest.getLeaveDaysRequested()) {
+            throw new IllegalStateException("Yetersiz izin gününüz var!");
+        }
+
+        LeaveRequest newLeaveRequest = new LeaveRequest(employee, leaveRequest.getLeaveDaysRequested());
+        leaveRequestRepository.save(newLeaveRequest);
+
+        return "İzin talebi başarıyla oluşturuldu ve onay bekliyor.";
     }
 
-
-
-    public void deleteLeaveRequest(Long id) {
+    public void deleteLeaveRequest(UUID id) {
         if (!leaveRequestRepository.existsById(id)) {
             throw new RuntimeException("İzin talebi bulunamadı.");
         }
         leaveRequestRepository.deleteById(id);
     }
-    
-    public ResponseEntity<?> approveLeaveRequest(Long id) {
+
+    public String approveLeaveRequest(UUID id) {
         LeaveRequest leaveRequest = leaveRequestRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("İzin talebi bulunamadı."));
 
         Employee employee = leaveRequest.getEmployee();
 
         if (leaveRequest.getStatus().equals("APPROVED")) {
-            return ResponseEntity.badRequest().body("Bu izin zaten onaylanmış!");
+            throw new IllegalStateException("Bu izin zaten onaylanmış!");
         }
 
         if (employee.getLeaveDays() < leaveRequest.getLeaveDaysRequested()) {
-            return ResponseEntity.badRequest().body("Çalışanın yeterli izin günü yok!");
+            throw new IllegalStateException("Çalışanın yeterli izin günü yok!");
         }
 
         // Onay verildiğinde çalışanın izin günlerini düş
@@ -77,24 +83,18 @@ public class LeaveRequestService {
         leaveRequest.setStatus("APPROVED");
         leaveRequestRepository.save(leaveRequest);
 
-        return ResponseEntity.ok("İzin talebi onaylandı ve çalışanın izin günleri güncellendi.");
+        return "İzin talebi onaylandı ve çalışanın izin günleri güncellendi.";
     }
 
-
-    public ResponseEntity<?> rejectLeaveRequest(Long id) {
+    public String rejectLeaveRequest(UUID id) {
         LeaveRequest leaveRequest = leaveRequestRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("İzin talebi bulunamadı."));
 
         if (leaveRequest.getStatus().equals("APPROVED")) {
-            return ResponseEntity.badRequest().body("Bu izin zaten onaylanmış, iptal edilemez!");
+            throw new IllegalStateException("Bu izin zaten onaylanmış, iptal edilemez!");
         }
 
         leaveRequestRepository.deleteById(id);
-        return ResponseEntity.ok("İzin talebi reddedildi.");
+        return "İzin talebi reddedildi.";
     }
-
-
-
-
-
 }

@@ -6,6 +6,8 @@ import com.canmertek.leave_management.repository.EmployeeRepository;
 import com.canmertek.leave_management.repository.LeaveRequestRepository;
 
 import jakarta.validation.Valid;
+
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +22,9 @@ public class LeaveRequestService {
     private LeaveRequestRepository leaveRequestRepository;
     @Autowired
     private EmployeeRepository employeeRepository;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
 
     // Tüm izin taleplerini getir
     public List<LeaveRequest> getAllLeaveRequests() {
@@ -32,7 +37,7 @@ public class LeaveRequestService {
     }
 
     // Yeni izin talebi oluştur
-    public String createLeaveRequest(@Valid LeaveRequest leaveRequest) {
+    public String createLeaveRequest(LeaveRequest leaveRequest) {
         Optional<Employee> employeeOpt = employeeRepository.findByEmail(leaveRequest.getEmployee().getEmail());
 
         if (employeeOpt.isEmpty()) {
@@ -42,18 +47,25 @@ public class LeaveRequestService {
         Employee employee = employeeOpt.get();
 
         if (leaveRequestRepository.existsByEmployeeAndStatus(employee, "PENDING")) {
-            throw new IllegalStateException("Zaten bekleyen bir izin talebiniz var!");
+            throw new RuntimeException("Zaten bekleyen bir izin talebiniz var!");
         }
 
         if (employee.getLeaveDays() < leaveRequest.getLeaveDaysRequested()) {
-            throw new IllegalStateException("Yetersiz izin gününüz var!");
+            throw new RuntimeException("Yetersiz izin gününüz var!");
         }
 
         LeaveRequest newLeaveRequest = new LeaveRequest(employee, leaveRequest.getLeaveDaysRequested());
         leaveRequestRepository.save(newLeaveRequest);
 
-        return "İzin talebi başarıyla oluşturuldu ve onay bekliyor.";
+        //Bildirimi RabbitMQ kuyruğuna gönder
+        String notificationMessage = String.format("Yeni izin talebi: %s %s - %d gün",
+                employee.getName(), employee.getSurname(), leaveRequest.getLeaveDaysRequested());
+
+        rabbitTemplate.convertAndSend("notificationsQueue", notificationMessage);
+
+        return "İzin talebi başarıyla oluşturuldu ve bildirim gönderildi.";
     }
+
 
     public void deleteLeaveRequest(UUID id) {
         if (!leaveRequestRepository.existsById(id)) {
